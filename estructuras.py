@@ -1,12 +1,17 @@
+from datetime import datetime
+
 class Tarea:
     def __init__(self, id_tarea, descripcion, prioridad_texto, fecha_vencimiento):
-        self.id_tarea = id_tarea                  # Identificador único
-        self.descripcion = descripcion            # Descripción de la tarea
-        self.prioridad_texto = prioridad_texto    # Ej: "alta", "media", "baja"
+        self.id_tarea = id_tarea
+        self.descripcion = descripcion
+        self.prioridad_texto = prioridad_texto
         self.fecha_vencimiento = fecha_vencimiento
 
-        # Asignamos un valor numérico para que el Heap pueda comparar fácilmente
         self.valor_prioridad = self._asignar_valor_prioridad(prioridad_texto)
+
+        self.fecha_objeto = datetime.strptime(
+            fecha_vencimiento,
+            "%d/%m/%Y")
 
     def _asignar_valor_prioridad(self, prioridad_texto):
         prioridad = prioridad_texto.lower()
@@ -18,6 +23,12 @@ class Tarea:
             return 1
         else:
             return 0
+        
+    def es_mas_prioritaria_que(self, otra_tarea):
+        if self.valor_prioridad != otra_tarea.valor_prioridad:
+            return self.valor_prioridad > otra_tarea.valor_prioridad
+
+        return self.fecha_objeto < otra_tarea.fecha_objeto
 
     def __str__(self):
         return f"ID: {self.id_tarea} | {self.descripcion} | Prioridad: {self.prioridad_texto.capitalize()} | Vence: {self.fecha_vencimiento}"
@@ -36,7 +47,7 @@ class MaxHeap:
         self._flotar(len(self.heap) - 1)
 
     def _flotar(self, i):
-        while i != 0 and self.heap[self.padre(i)].valor_prioridad < self.heap[i].valor_prioridad:
+        while i != 0 and self.heap[i].es_mas_prioritaria_que(self.heap[self.padre(i)]):
             self.heap[i], self.heap[self.padre(i)] = self.heap[self.padre(i)], self.heap[i]
             i = self.padre(i)
 
@@ -55,9 +66,10 @@ class MaxHeap:
         der = self.hijo_derecho(i)
         n = len(self.heap)
 
-        if izq < n and self.heap[izq].valor_prioridad > self.heap[mayor].valor_prioridad:
+        if izq < n and self.heap[izq].es_mas_prioritaria_que(self.heap[mayor]):
             mayor = izq
-        if der < n and self.heap[der].valor_prioridad > self.heap[mayor].valor_prioridad:
+
+        if der < n and self.heap[der].es_mas_prioritaria_que(self.heap[mayor]):
             mayor = der
 
         if mayor != i:
@@ -79,7 +91,7 @@ class MaxHeap:
 
         if idx < len(self.heap):
             padre_idx = self.padre(idx)
-            if idx > 0 and self.heap[padre_idx].valor_prioridad < self.heap[idx].valor_prioridad:
+            if idx > 0 and self.heap[idx].es_mas_prioritaria_que(self.heap[padre_idx]):
                 self._flotar(idx)
             else:
                 self._hundir(idx)
