@@ -1,4 +1,5 @@
 import tkinter as tk
+from datetime import datetime
 from tkinter import messagebox, ttk
 from estructuras import Tarea, MaxHeap, ArbolAVL
 
@@ -100,6 +101,14 @@ class InterfazGrafica:
         tk.Button(frame_acciones_tabla, text="Cargar para Editar", command=self.cargar_para_editar).pack(side="left", padx=10)
         tk.Button(frame_acciones_tabla, text="Marcar como Completada", command=self.marcar_completada_seleccionada, bg="lightgreen").pack(side="left", padx=10)
 
+        # Valida que la fecha ingresada tenga el formato correcto DD/MM/AAAA
+    def validar_fecha(self, fecha):
+        try:
+            datetime.strptime(fecha, "%d/%m/%Y")
+            return True
+        except ValueError:
+            return False
+
     # --- Lógica de la interfaz ---
     def agregar(self):
         try:
@@ -110,6 +119,12 @@ class InterfazGrafica:
 
             if not desc or not fecha:
                 messagebox.showwarning("Faltan datos", "Por favor llena todos los campos.")
+                return
+            
+            if not self.validar_fecha(fecha):
+                messagebox.showerror(
+                    "Fecha inválida",
+                    "La fecha debe tener el formato DD/MM/AAAA.\nEjemplo: 15/07/2026")
                 return
 
             if self.gestor.buscar_tarea(id_tarea):
@@ -183,6 +198,19 @@ class InterfazGrafica:
         desc = self.entry_desc.get()
         prioridad = self.combo_prioridad.get()
         fecha = self.entry_fecha.get()
+        if not desc or not fecha:
+            messagebox.showwarning(
+                "Faltan datos",
+                "Por favor llena todos los campos.")
+            self.entry_id.config(state="disabled")
+            return
+
+        if not self.validar_fecha(fecha):
+            messagebox.showerror(
+                "Fecha inválida",
+                "La fecha debe tener el formato DD/MM/AAAA.\nEjemplo: 15/07/2026")
+            self.entry_id.config(state="disabled")
+            return
 
         self.gestor.eliminar_tarea(id_tarea)
         self.gestor.agregar_tarea(id_tarea, desc, prioridad, fecha)
@@ -201,7 +229,11 @@ class InterfazGrafica:
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        tareas_visuales = sorted(self.gestor.heap.heap, key=lambda t: t.valor_prioridad, reverse=True)
+        # Ordena las tareas por prioridad y, en caso de empate,
+        # por la fecha de vencimiento más cercana
+        tareas_visuales = sorted(
+            self.gestor.heap.heap,
+            key=lambda t: (-t.valor_prioridad, t.fecha_objeto))
         for t in tareas_visuales:
             self.tree.insert("", tk.END, values=(t.id_tarea, t.descripcion, t.prioridad_texto.capitalize(), t.fecha_vencimiento))
 
