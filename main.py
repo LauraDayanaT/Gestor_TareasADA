@@ -1,10 +1,13 @@
 import tkinter as tk
+import json
 from datetime import datetime
 from tkinter import messagebox, ttk
 from estructuras import Tarea, MaxHeap, ArbolAVL
 
 
 class GestorTareas:
+    ARCHIVO = "tareas.json"
+
     def __init__(self):
         self.heap = MaxHeap()
         self.avl = ArbolAVL()
@@ -33,10 +36,31 @@ class GestorTareas:
             return True
         return False
 
+    def guardar_en_archivo(self):
+        tareas = self.avl.recorrido_inorden(self.raiz_avl)
+        datos = [
+            {"id": t.id_tarea, "descripcion": t.descripcion,
+             "prioridad": t.prioridad_texto, "fecha": t.fecha_vencimiento}
+            for t in tareas
+        ]
+        with open(self.ARCHIVO, "w", encoding="utf-8") as f:
+            json.dump(datos, f, ensure_ascii=False, indent=2)
+
+    def cargar_desde_archivo(self):
+        try:
+            with open(self.ARCHIVO, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+            for d in datos:
+                self.agregar_tarea(d["id"], d["descripcion"], d["prioridad"], d["fecha"])
+        except FileNotFoundError:
+            pass
+
+
 
 class InterfazGrafica:
     def __init__(self, root, gestor):
         self.gestor = gestor
+        self.gestor.cargar_desde_archivo()
         self.root = root
         self.root.title("Gestor de Tareas de Productividad (AVL y Max-Heap)")
         self.root.geometry("650x600")
@@ -100,6 +124,9 @@ class InterfazGrafica:
         frame_acciones_tabla.pack(pady=5)
         tk.Button(frame_acciones_tabla, text="Cargar para Editar", command=self.cargar_para_editar).pack(side="left", padx=10)
         tk.Button(frame_acciones_tabla, text="Marcar como Completada", command=self.marcar_completada_seleccionada, bg="lightgreen").pack(side="left", padx=10)
+
+        self.actualizar_tabla()
+        self.root.protocol("WM_DELETE_WINDOW", self.al_cerrar)
 
         # Valida que la fecha ingresada tenga el formato correcto DD/MM/AAAA
     def validar_fecha(self, fecha):
@@ -237,6 +264,9 @@ class InterfazGrafica:
         for t in tareas_visuales:
             self.tree.insert("", tk.END, values=(t.id_tarea, t.descripcion, t.prioridad_texto.capitalize(), t.fecha_vencimiento))
 
+    def al_cerrar(self):
+        self.gestor.guardar_en_archivo()
+        self.root.destroy()
 
 if __name__ == "__main__":
     ventana_principal = tk.Tk()

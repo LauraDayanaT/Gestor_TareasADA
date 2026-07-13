@@ -181,7 +181,6 @@ class ArbolAVL:
             nodo.tarea = temp.tarea
             nodo.derecho = self.eliminar(nodo.derecho, temp.tarea.id_tarea)
 
-        if nodo is None: return nodo
 
         nodo.altura = 1 + max(self.obtener_altura(nodo.izquierdo), self.obtener_altura(nodo.derecho))
         balance = self.obtener_balance(nodo)
@@ -196,3 +195,12 @@ class ArbolAVL:
             return self.rotacion_izquierda(nodo)
 
         return nodo
+
+    def recorrido_inorden(self, nodo, resultado=None):
+        if resultado is None:
+            resultado = []
+        if nodo:
+            self.recorrido_inorden(nodo.izquierdo, resultado)
+            resultado.append(nodo.tarea)
+            self.recorrido_inorden(nodo.derecho, resultado)
+        return resultado
